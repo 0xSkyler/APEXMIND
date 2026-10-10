@@ -1,0 +1,23 @@
+[Unit]
+Description=APEX MIND bounded research laboratory
+After=network-online.target
+
+[Service]
+Type=simple
+User=apexmind
+Group=apexmind
+WorkingDirectory=/opt/apexmind
+Environment=OMP_NUM_THREADS=2
+Environment=OPENBLAS_NUM_THREADS=2
+ExecStart=/opt/apexmind/.venv/bin/apex --config /etc/apexmind/config.toml lab --latency /var/lib/apexmind/latency.json --out /var/lib/apexmind/laboratory --interval 3600
+Restart=on-failure
+RestartSec=60
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/apexmind
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

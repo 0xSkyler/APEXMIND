@@ -1,0 +1,36 @@
+[Unit]
+Description=APEX MIND local Save and Start UI
+Wants=network-online.target
+After=network-online.target chrony.service
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=apexmind
+Group=apexmind
+WorkingDirectory=/opt/apexmind
+Environment=APEX_REPORT=/var/lib/apexmind/evaluation/report.json
+Environment=APEX_MODEL=/var/lib/apexmind/evaluation/champion.joblib
+Environment=APEX_LATENCY=/var/lib/apexmind/latency.json
+Environment=APEX_REGISTRY=/var/lib/apexmind/laboratory/registry.json
+EnvironmentFile=-/etc/apexmind/ui.env
+EnvironmentFile=-/etc/apexmind/network.env
+Environment=OMP_NUM_THREADS=2
+Environment=OPENBLAS_NUM_THREADS=2
+Environment=MKL_NUM_THREADS=2
+ExecStart=/opt/apexmind/.venv/bin/apex --config /etc/apexmind/config.toml ui --state-dir /var/lib/apexmind/ui
+Restart=on-failure
+RestartSec=30
+TimeoutStopSec=360
+KillSignal=SIGTERM
+KillMode=mixed
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/apexmind
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

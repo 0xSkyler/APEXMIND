@@ -1,0 +1,19 @@
+name: Checks
+on: [push, pull_request]
+jobs:
+  offline-validation:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: '0.12.19'
+      - run: uv sync --frozen --all-extras
+      - run: uv run --frozen ruff check src tests
+      - run: uv run --frozen pytest -q
+        env:
+          OMP_NUM_THREADS: '2'
+          OPENBLAS_NUM_THREADS: '2'

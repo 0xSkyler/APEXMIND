@@ -1,0 +1,25 @@
+[Unit]
+Description=APEX MIND public market-data collector
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=apexmind
+Group=apexmind
+WorkingDirectory=/opt/apexmind
+Environment=OMP_NUM_THREADS=2
+Environment=OPENBLAS_NUM_THREADS=2
+EnvironmentFile=-/etc/apexmind/network.env
+ExecStart=/opt/apexmind/.venv/bin/apex --config /etc/apexmind/config.toml collect
+Restart=on-failure
+RestartSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/apexmind
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

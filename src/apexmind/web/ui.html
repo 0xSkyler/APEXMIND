@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="apex-token" content="__TOKEN__">
+  <title>APEX MIND · Live control</title>
+  <style nonce="__TOKEN__">
+    :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #172738; background: #f3f6f8; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 28px 18px; }
+    main { width: 100%; max-width: 440px; }
+    .brand { display: flex; align-items: center; gap: 10px; margin: 0 0 25px 4px; font-size: 13px; letter-spacing: 2px; font-weight: 750; }
+    .mark { width: 29px; height: 29px; border-radius: 8px; display: grid; place-items: center; background: #173e49; color: white; font-size: 15px; letter-spacing: 0; }
+    .card { background: white; border: 1px solid #e0e7eb; border-radius: 22px; padding: 32px; box-shadow: 0 12px 45px #25374708; }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    h1 { font-size: 26px; letter-spacing: -.8px; font-weight: 650; margin: 0; }
+    .badge { padding: 6px 10px; border-radius: 20px; background: #eef2f5; color: #61717f; font-size: 11px; font-weight: 650; white-space: nowrap; }
+    .badge[data-state="Running"] { color: #18614c; background: #e6f6ed; }
+    .badge[data-state="Blocked"], .badge[data-state="Suspended"] { color: #92641a; background: #fff4dc; }
+    .intro { color: #71808b; font-size: 14px; margin: 10px 0 28px; }
+    label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+    .field { margin-bottom: 20px; }
+    input { display: block; width: 100%; border: 1px solid #dce4e9; border-radius: 9px; padding: 12px 13px; font: inherit; font-size: 14px; color: #203544; background: #fcfdfe; }
+    input:focus { outline: 3px solid #148d8218; border-color: #168b80; }
+    input:disabled { opacity: .65; }
+    input::placeholder { color: #a0acb5; }
+    small { display: block; font-size: 11px; line-height: 1.5; color: #7d8b95; margin-top: 7px; }
+    .actions { display: flex; gap: 10px; margin-top: 25px; }
+    button { border: 0; border-radius: 9px; padding: 12px 18px; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
+    button:focus-visible { outline: 3px solid #63cabc; outline-offset: 3px; }
+    button:disabled { opacity: .45; cursor: default; }
+    #save { flex: 1; background: #eff3f5; color: #415765; }
+    #start { flex: 1; background: #147d71; color: white; }
+    #stop { width: 100%; background: #f9efea; color: #a05338; margin-top: 10px; }
+    [hidden] { display: none !important; }
+    .status { border-top: 1px solid #eef2f4; margin-top: 25px; padding-top: 18px; }
+    #message { color: #647784; font-size: 12px; line-height: 1.7; margin: 0; overflow-wrap: anywhere; }
+    footer { text-align: center; color: #8a979f; font-size: 11px; line-height: 1.7; margin: 20px 18px 0; }
+    @media (max-width: 380px) { .card { padding: 24px; } h1 { font-size: 23px; } }
+  </style>
+</head>
+<body>
+<main>
+  <div class="brand"><span class="mark" aria-hidden="true">A</span> APEX MIND</div>
+  <section class="card" aria-labelledby="title">
+    <div class="top"><h1 id="title">Connect &amp; start</h1><span class="badge" id="badge">Connecting</span></div>
+    <p class="intro">Enter your Lighter API information.</p>
+    <form id="form" autocomplete="off">
+      <div class="field"><label for="account">Account index</label><input id="account" name="account_index" inputmode="numeric" pattern="[0-9]+" maxlength="20" placeholder="Your account index" required></div>
+      <div class="field"><label for="api">API key index</label><input id="api" name="api_key_index" inputmode="numeric" pattern="[0-9]+" maxlength="3" placeholder="Your API key index" required></div>
+      <div class="field"><label for="key">API private key</label><input id="key" name="private_key" type="password" autocomplete="new-password" spellcheck="false" maxlength="66" placeholder="Paste your signing key" required aria-describedby="key-note"><small id="key-note">Saved securely on this host.</small></div>
+      <div class="actions"><button id="save" type="submit" disabled>Save</button><button id="start" type="button" disabled>Start</button></div>
+      <button id="stop" type="button" hidden>Stop runner</button>
+    </form>
+    <div class="status"><p id="message" role="status" aria-live="polite">Connecting to your local runner…</p></div>
+  </section>
+  <footer>Keys stay on this host.<br>Trading begins only after qualification checks pass.</footer>
+</main>
+<script nonce="__TOKEN__">
+  const token = document.querySelector('meta[name="apex-token"]').content;
+  const byId = id => document.getElementById(id);
+  let latest = null, dirty = false, initialized = false, sending = false, feedback = '';
+  function buttons() {
+    const busy = sending || Boolean(latest?.busy);
+    ['account', 'api', 'key'].forEach(id => { byId(id).disabled = busy; });
+    byId('save').disabled = busy || !latest;
+    byId('start').disabled = busy || dirty || !latest?.key_saved;
+    byId('stop').hidden = !latest?.busy;
+    byId('stop').disabled = sending || latest?.state === 'Stopping';
+  }
+  function render(data) {
+    latest = data;
+    if (!initialized) {
+      byId('account').value = data.account_index;
+      byId('api').value = data.api_key_index;
+      initialized = true;
+    }
+    byId('badge').textContent = data.state;
+    byId('badge').dataset.state = data.state;
+    byId('message').textContent = feedback || data.message;
+    byId('key').required = !data.key_saved;
+    byId('key').placeholder = data.key_saved ? 'Saved — leave blank to keep' : 'Paste your signing key';
+    byId('key-note').textContent = data.key_saved ? 'Key saved. Enter a new key only to replace it.' : 'Saved securely on this host.';
+    buttons();
+  }
+  async function request(path, body) {
+    const options = {headers: {'X-APEX-Token': token}, cache: 'no-store'};
+    if (body !== undefined) {
+      options.method = 'POST'; options.headers['Content-Type'] = 'application/json';
+      options.body = JSON.stringify(body);
+    }
+    const response = await fetch(path, options);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Request failed.');
+    return data;
+  }
+  async function action(path, data) {
+    feedback = '';
+    sending = true; buttons();
+    try {
+      const result = await request(path, data);
+      if (path === '/api/save') { byId('key').value = ''; dirty = false; }
+      render(result);
+    } catch (error) { feedback = error.message; byId('message').textContent = feedback; }
+    finally { sending = false; buttons(); }
+  }
+  byId('form').addEventListener('submit', event => {
+    event.preventDefault();
+    action('/api/save', {account_index: byId('account').value.trim(), api_key_index: byId('api').value.trim(), private_key: byId('key').value.trim()});
+  });
+  ['account', 'api', 'key'].forEach(id => byId(id).addEventListener('input', () => { dirty = true; buttons(); }));
+  byId('start').addEventListener('click', () => action('/api/start', {}));
+  byId('stop').addEventListener('click', () => action('/api/stop', {}));
+  async function poll() {
+    if (sending) return;
+    try { render(await request('/api/status')); }
+    catch { latest = null; buttons(); byId('badge').textContent = 'Disconnected'; byId('message').textContent = 'Local UI disconnected. Check the runner before closing or restarting.'; }
+  }
+  poll(); setInterval(poll, 3000);
+</script>
+</body>
+</html>

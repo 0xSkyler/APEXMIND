@@ -1,0 +1,59 @@
+[feeds]
+lighter_rest = "https://mainnet.zklighter.elliot.ai"
+lighter_ws = "wss://mainnet.zklighter.elliot.ai/stream"
+reference_venue = "kraken"
+reference_rest = "https://futures.kraken.com"
+reference_ws = "wss://futures.kraken.com/ws/v1"
+symbols = ["BTC", "ETH"]
+max_freshness_ms = 500
+decision_interval_ms = 250
+request_per_second = 2
+depth_levels = 100
+max_clock_step_ms = 50
+
+[research]
+notional = 12.0
+holding_seconds = 2.0
+# Conservative explicit assumptions; replace with verified account-tier costs.
+taker_fee_bps = 2.0
+funding_reserve_bps_per_hour = 1.0
+extra_slippage_bps = 1.0
+max_execution_gap_ms = 500
+seed = 42
+min_train_rows = 100
+folds = 3
+max_features = 12
+bootstrap_samples = 500
+max_events = 250000
+
+[risk]
+initial_balance = 10.0
+max_gross_leverage = 1.0
+max_market_fraction = 0.60
+max_loss_fraction = 0.01
+max_drawdown_fraction = 0.10
+margin_reserve_fraction = 0.30
+minimum_edge_bps = 1.0
+max_slippage_bps = 5.0
+
+[storage]
+database = "data/apex.sqlite"
+artifacts = "artifacts"
+
+[live]
+ledger = "data/live.sqlite"
+account_poll_seconds = 1.0
+account_max_age_seconds = 5.0
+order_timeout_seconds = 10.0
+feed_outage_seconds = 5.0
+transaction_per_second = 1.0
+request_per_second = 1.0
+margin_buffer_ratio = 2.0
+protective_slippage_bps = 100.0
+min_stop_bps = 10.0
+minimum_forward_episodes = 20
+retirement_window = 20
+max_clock_error_ms = 50.0
+queue_capacity = 10000
+max_episode_seconds = 300.0
+episode_transaction_budget = 60
