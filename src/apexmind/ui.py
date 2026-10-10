@@ -78,7 +78,7 @@ class Credentials:
             name = raw["key_file"]
             if not isinstance(name, str) or not re.fullmatch(r"signing-[0-9a-f]{32}\.key", name):
                 raise UIError("Saved API info is invalid. Save it again.")
-            if not re.fullmatch(r"(?:0x)?[0-9a-fA-F]{64}", self.read(name).strip()):
+            if not re.fullmatch(r"(?:0x)?[0-9a-fA-F]{80}", self.read(name).strip()):
                 raise UIError("Saved API key is invalid. Save it again.")
             return {"account_index": account, "api_key_index": api, "key_file": name}
         except FileNotFoundError:
@@ -97,8 +97,8 @@ class Credentials:
         if not isinstance(key, str):
             raise UIError("Enter your API private key.")
         key = key.strip()
-        if key and not re.fullmatch(r"(?:0x)?[0-9a-fA-F]{64}", key):
-            raise UIError("The API private key must contain 64 hexadecimal characters.")
+        if key and not re.fullmatch(r"(?:0x)?[0-9a-fA-F]{80}", key):
+            raise UIError("The Lighter API private key must contain 80 hexadecimal characters.")
         try:
             old = self.load()
         except UIError:

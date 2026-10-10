@@ -66,7 +66,7 @@ def read_signing_key():
         key = file.read(256).strip()
     # Proxy placeholders are not local signing keys. Values are never logged.
     material = key.removeprefix("0x")
-    if len(material) != 64 or any(c not in "0123456789abcdefABCDEF" for c in material):
+    if len(material) != 80 or any(c not in "0123456789abcdefABCDEF" for c in material):
         raise ExecutionBlocked("Invalid local signing key encoding")
     return key
 

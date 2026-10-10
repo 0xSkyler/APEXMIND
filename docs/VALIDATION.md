@@ -1,12 +1,12 @@
-# APEX MIND 0.3.0 validation
+# APEX MIND 0.3.1 validation
 
 The UI extension was validated on 2026-10-10. Version 0.2.0 network/account observations below are retained from the earlier cloud checks; this extension does not establish new native exchange readiness.
 
 | Check | Observed result |
 |---|---|
-| Frozen installation with all extras | Passed; Python 3.12.14, version 0.3.0, pinned SDK 1.1.6 |
+| Frozen installation with all extras | Passed; Python 3.12.14, version 0.3.1, pinned SDK 1.1.6 |
 | Ruff | Passed |
-| Automated offline tests | **79 passed**, with two SDK deprecation warnings |
+| Automated offline tests | **80 passed**, with two SDK deprecation warnings |
 | Local HTTP credential/control tests | Passed; same-origin/token/host restrictions, private storage, no key returned |
 | Manager process lifecycle | Passed with real child processes and scripted native commands; single Start, SIGTERM, recovery; no real orders |
 | Chromium desktop UI | Passed; three fields, Save clears the key, status contains no key, missing qualification blocks Start |
@@ -27,9 +27,9 @@ The UI extension was validated on 2026-10-10. Version 0.2.0 network/account obse
 
 The UI uses protected local credential files. Browser automation used nonfunctional test API material in /tmp, not actual account authentication. No real account transaction was submitted. The UI binds to loopback, requires its per-process token and a matching origin for actions, and provides no saved-key retrieval endpoint. It manages one runner, checks existing ledger ownership before changing API info, and preserves existing evidence/native protection requirements.
 
-The latest synthetic end-to-end evaluation is `reports/ui-0.3-release-validation/evaluation/report.json` and `report.md`. It records 2,336 tested sides, 2,304 labels, 18 model/fold comparisons, and zero selected trades. Source/model hashes match the current implementation. Synthetic market data and latency never qualify live deployment. Both profitability and live-deployment flags remain false. Older validation directories are historical and may refer to prior source hashes.
+The latest synthetic end-to-end evaluation is `reports/ui-0.3.1-release-validation/evaluation/report.json` and `report.md`. It records 2,336 tested sides, 2,304 labels, 18 model/fold comparisons, and zero selected trades. Source/model hashes match the current implementation. Synthetic market data and latency never qualify live deployment. Both profitability and live-deployment flags remain false. Older validation directories are historical and may refer to prior source hashes.
 
-Source manifest SHA256: `ce3c825013282cb57352fbd6af5c422d95e1404590fc21bbd1d02ca62e1d0fb5`.
+Source manifest SHA256: `32c51d6a21c6f9f6e07a3ed5cc87e38a8ff766962fff254027953cf5b7698c3d`.
 
 Offline lifecycle tests cover durable pre-submit journals, acknowledged versus executed orders, uncertain POST outcomes without retries, final preflight expiry, partial/canceled fills, duplicate reconciliation, native position-tied stops, parent identity, clipped reduce-only quantities, conservative price rounding, ownership mismatches, stale/missing native effects, margin/drawdown guards, actual flat-to-flat cash, external deposits, locked writers/account binding, audit checkpoints, pilot versus production evidence, and failure preserving an incumbent. These tests do not certify actual exchange behavior.
 

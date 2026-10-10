@@ -93,13 +93,16 @@ def test_execution_optimizer_requires_passive_measurements():
 
 def test_local_signer_permissions_checked_without_logging_key(tmp_path, monkeypatch):
     path = tmp_path / "signing.key"
-    path.write_text("f" * 64)
+    path.write_text("f" * 80)
     path.chmod(0o644)
     monkeypatch.setenv("LIGHTER_SIGNING_KEY_FILE", str(path))
     with pytest.raises(ExecutionBlocked, match="0600"):
         read_signing_key()
     path.chmod(0o600)
-    assert read_signing_key() == "f" * 64
+    assert read_signing_key() == "f" * 80
+    path.write_text("f" * 64)
+    with pytest.raises(ExecutionBlocked, match="encoding"):
+        read_signing_key()
 
 
 def test_submission_ack_is_not_a_fill_and_partial_fills_remain_unresolved(tmp_path, monkeypatch):

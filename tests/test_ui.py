@@ -13,9 +13,10 @@ import pytest
 from aiohttp.test_utils import TestClient, TestServer, unused_port
 
 from apexmind.store import Store
+from apexmind.execution import read_signing_key
 from apexmind.ui import Controller, Credentials, Settings, UIError, create_app
 
-FAKE_KEY = "0x" + "ab" * 32
+FAKE_KEY = "0x" + "ab" * 40
 
 
 @pytest.fixture
@@ -37,7 +38,7 @@ def test_api_save_is_private_persistent_and_rotates_without_returning_key(tmp_pa
         store.save("001", "2", FAKE_KEY)
         old = store.load()
         assert old["account_index"] == "1"
-        assert "ab" * 32 not in json.dumps(old)
+        assert "ab" * 40 not in json.dumps(old)
         assert stat.S_IMODE(store.path.stat().st_mode) == 0o700
         for name in ("account.json", old["key_file"]):
             assert stat.S_IMODE((store.path / name).stat().st_mode) == 0o600
@@ -45,10 +46,10 @@ def test_api_save_is_private_persistent_and_rotates_without_returning_key(tmp_pa
         assert store.load() == old
         with pytest.raises(UIError, match="changing account"):
             store.save("9", "2", "")
-        with pytest.raises(UIError, match="64 hexadecimal"):
+        with pytest.raises(UIError, match="80 hexadecimal"):
             store.save("1", "2", "invalid")
         assert store.load() == old
-        store.save("1", "2", "cd" * 32)
+        store.save("1", "2", "cd" * 40)
         current = store.load()
         assert current["key_file"] != old["key_file"]
         assert not (store.path / old["key_file"]).exists()
@@ -62,6 +63,23 @@ def test_api_save_is_private_persistent_and_rotates_without_returning_key(tmp_pa
         restarted.close()
 
 
+def test_official_sdk_generated_api_key_is_accepted(tmp_path, monkeypatch):
+    import lighter
+
+    key, _public, error = lighter.create_api_key()
+    assert error is None
+    assert len(key) == 82 and key.startswith("0x")
+    store = Credentials(tmp_path / "private")
+    try:
+        store.save("1", "2", key)
+        monkeypatch.setenv(
+            "LIGHTER_SIGNING_KEY_FILE", store.environment()["LIGHTER_SIGNING_KEY_FILE"]
+        )
+        assert read_signing_key() == key
+    finally:
+        store.close()
+
+
 def test_failed_save_preserves_prior_identity_and_key(tmp_path, monkeypatch):
     store = Credentials(tmp_path / "private")
     try:
@@ -73,7 +91,7 @@ def test_failed_save_preserves_prior_identity_and_key(tmp_path, monkeypatch):
 
         monkeypatch.setattr(os, "replace", fail)
         with pytest.raises(OSError):
-            store.save("3", "4", "cd" * 32)
+            store.save("3", "4", "cd" * 40)
         assert store.load() == prior
         assert len(list(store.path.glob("*.key"))) == 1
         assert not list(store.path.glob("*.tmp"))
@@ -129,6 +147,7 @@ def test_http_save_requires_local_host_origin_token_and_never_echoes_key(setting
         try:
             response = await client.get("/")
             html = await response.text()
+            assert 'maxlength="82"' in html
             token = re.search(r'name="apex-token" content="([0-9a-f]+)"', html)[1]
             assert "frame-ancestors 'none'" in response.headers["Content-Security-Policy"]
             assert response.headers["Cache-Control"] == "no-store"
@@ -158,7 +177,7 @@ def test_http_save_requires_local_host_origin_token_and_never_echoes_key(setting
             response = await client.post("/api/save", json=body, headers=headers)
             assert response.status == 200
             text = await response.text()
-            assert FAKE_KEY not in text and "ab" * 32 not in text
+            assert FAKE_KEY not in text and "ab" * 40 not in text
             assert json.loads(text)["key_saved"]
             assert (await client.get("/api/status")).status == 403
             response = await client.get("/api/status", headers={"X-APEX-Token": token})

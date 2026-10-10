@@ -10,7 +10,7 @@ An execution-aware Lighter perpetual trading system with CVIFA research, forward
 .venv/bin/apex ui
 ```
 
-Open `http://127.0.0.1:8765` in your browser. The page has just **Account index**, **API key index**, **API private key**, **Save**, and **Start**. It shows current status and a Stop control while the runner is active. Save writes the key to a protected local file and clears it from the form; it never sends a saved key back to the browser. Leave the key blank to keep it. Changing account/key index requires entering the corresponding key again.
+Open `http://127.0.0.1:8765` in your browser. The page has just **Account index**, **API key index**, **API private key**, **Save**, and **Start**. Use the Lighter API private key returned when creating the API key (`0x` plus 80 hexadecimal characters), not an Ethereum wallet private key. Save writes the key to a protected local file and clears it from the form; it never sends a saved key back to the browser. Leave the key blank to keep it. Changing account/key index requires entering the corresponding key again.
 
 Start checks real strategy/latency evidence, clock synchronization, account access, owned recovery, and the selected deployment stage before launching live trading. Missing prerequisites appear as a blocked status. It does not generate evidence or run cost-incurring calibration automatically. Stop signals the runner, then verifies owned exposure recovery; incomplete recovery remains visible. Closing a browser tab does not stop the runner. Stopping the UI server stops its managed runner and attempts recovery. After restarting the server, credentials persist and Start must be clicked again.
 

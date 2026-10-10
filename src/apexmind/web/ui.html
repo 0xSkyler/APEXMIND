@@ -49,7 +49,7 @@
     <form id="form" autocomplete="off">
       <div class="field"><label for="account">Account index</label><input id="account" name="account_index" inputmode="numeric" pattern="[0-9]+" maxlength="20" placeholder="Your account index" required></div>
       <div class="field"><label for="api">API key index</label><input id="api" name="api_key_index" inputmode="numeric" pattern="[0-9]+" maxlength="3" placeholder="Your API key index" required></div>
-      <div class="field"><label for="key">API private key</label><input id="key" name="private_key" type="password" autocomplete="new-password" spellcheck="false" maxlength="66" placeholder="Paste your signing key" required aria-describedby="key-note"><small id="key-note">Saved securely on this host.</small></div>
+      <div class="field"><label for="key">API private key</label><input id="key" name="private_key" type="password" autocomplete="new-password" spellcheck="false" maxlength="82" placeholder="Paste your signing key" required aria-describedby="key-note"><small id="key-note">Use the Lighter API private key (80 hex), not your wallet key.</small></div>
       <div class="actions"><button id="save" type="submit" disabled>Save</button><button id="start" type="button" disabled>Start</button></div>
       <button id="stop" type="button" hidden>Stop runner</button>
     </form>
@@ -81,7 +81,7 @@
     byId('message').textContent = feedback || data.message;
     byId('key').required = !data.key_saved;
     byId('key').placeholder = data.key_saved ? 'Saved — leave blank to keep' : 'Paste your signing key';
-    byId('key-note').textContent = data.key_saved ? 'Key saved. Enter a new key only to replace it.' : 'Saved securely on this host.';
+    byId('key-note').textContent = data.key_saved ? 'Key saved. Enter a new key only to replace it.' : 'Use the Lighter API private key (80 hex), not your wallet key.';
     buttons();
   }
   async function request(path, body) {
