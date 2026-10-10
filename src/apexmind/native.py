@@ -220,10 +220,13 @@ class NativeGateway:
             {
                 "by": "index",
                 "value": str(self.account_index),
-                "resolution": "1h",
+                # Cash audits use short flat-to-flat windows. Hourly buckets can
+                # leave those windows empty even when the account has valid PnL
+                # history, so request the exchange's smallest documented bucket.
+                "resolution": "1m",
                 "start_timestamp": start_ms,
                 "end_timestamp": end_ms,
-                "count_back": min(10000, max(3, int((end_ms - start_ms) / 3600000) + 3)),
+                "count_back": min(10000, max(3, int((end_ms - start_ms) / 60000) + 3)),
                 "ignore_transfers": "false",
             },
             True,

@@ -100,6 +100,7 @@ class ScriptedHTTPS:
         if path == "accountTxs":
             return Response({"txs": self.transactions})
         if path == "pnl":
+            assert params["resolution"] == "1m"
             assert params["count_back"] >= 3
             return Response(
                 {
