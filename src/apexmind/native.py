@@ -215,18 +215,22 @@ class NativeGateway:
         return await self.request("/api/v1/tx", {"by": "hash", "value": tx_hash})
 
     async def cash_history(self, start_ms, end_ms):
+        # Mainnet currently accepts hourly PnL buckets. Audit episodes are much
+        # shorter, so widen their read window to include complete chart rows;
+        # the cumulative cash counters still provide the requested baseline.
+        resolution_ms = 3_600_000
+        start_ms = min(start_ms, end_ms - 2 * resolution_ms)
         data = await self.request(
             "/api/v1/pnl",
             {
                 "by": "index",
                 "value": str(self.account_index),
-                # Cash audits use short flat-to-flat windows. Hourly buckets can
-                # leave those windows empty even when the account has valid PnL
-                # history, so request the exchange's smallest documented bucket.
-                "resolution": "1m",
+                "resolution": "1h",
                 "start_timestamp": start_ms,
                 "end_timestamp": end_ms,
-                "count_back": min(10000, max(3, int((end_ms - start_ms) / 60000) + 3)),
+                "count_back": min(
+                    10000, max(3, int((end_ms - start_ms) / resolution_ms) + 3)
+                ),
                 "ignore_transfers": "false",
             },
             True,
