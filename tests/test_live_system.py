@@ -19,6 +19,7 @@ from apexmind.evidence import (
     runtime_gate,
 )
 from apexmind.execution import ExecutionBlocked
+from apexmind.integration import feed_problems
 from apexmind.live import LedgerLock, LiveEngine
 from apexmind.native import NativeGateway, units
 from apexmind.store import Store
@@ -39,6 +40,23 @@ FORECAST = dict(
     holding_seconds=2.0,
 )
 BOOK = {"bids": [[99.99, 10]], "asks": [[100.01, 10]]}
+
+
+def test_native_feed_diagnostics_identify_missing_and_stale_evidence():
+    now = 10_000_000_000
+    event = SimpleNamespace(
+        mono_ns=now - 800_000_000,
+        wall_ns=20_000_000_000,
+        exchange_ns=19_000_000_000,
+        payload={"sequence_verified": True, "clock_healthy": True},
+    )
+    problems = feed_problems({("lighter", "BTC"): event}, set(), "BTC", 500, now)
+    assert problems == [
+        "lighter book stale (800 ms)",
+        "lighter timestamp offset 1000 ms",
+        "reference book missing",
+        "lighter funding missing",
+    ]
 
 
 def snapshot(quantity=0, collateral=100, side=1):

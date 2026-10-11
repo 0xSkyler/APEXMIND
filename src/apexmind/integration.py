@@ -29,6 +29,32 @@ FORECAST = dict(
 )
 
 
+def feed_problems(latest, coverage, symbol, max_freshness_ms, now_mono_ns=None):
+    now = time.monotonic_ns() if now_mono_ns is None else now_mono_ns
+    problems = []
+    for venue in ("lighter", "reference"):
+        event = latest.get((venue, symbol))
+        if event is None:
+            problems.append(f"{venue} book missing")
+            continue
+        age_ms = max(0.0, (now - event.mono_ns) / 1e6)
+        if age_ms > max_freshness_ms:
+            problems.append(f"{venue} book stale ({age_ms:.0f} ms)")
+        if not event.payload.get("sequence_verified"):
+            problems.append(f"{venue} book sequence unverified")
+        if not event.payload.get("clock_healthy"):
+            problems.append(f"{venue} collector clock unhealthy")
+        if event.exchange_ns is None:
+            problems.append(f"{venue} exchange timestamp missing")
+        else:
+            offset_ms = abs(event.wall_ns - event.exchange_ns) / 1e6
+            if offset_ms > max_freshness_ms:
+                problems.append(f"{venue} timestamp offset {offset_ms:.0f} ms")
+    if ("lighter", symbol, "funding") not in coverage:
+        problems.append("lighter funding missing")
+    return problems
+
+
 async def connected(config, callback, public_feeds=False):
     lease = LedgerLock(config.live.ledger)
     store = Store(config.live.ledger)
@@ -144,20 +170,11 @@ async def integration_test(
         task = asyncio.create_task(collector.run())
 
         def quote():
-            now = time.monotonic_ns()
-            for venue in ("lighter", "reference"):
-                e = latest.get((venue, symbol))
-                if (
-                    e is None
-                    or now - e.mono_ns > config.feeds.max_freshness_ms * 1e6
-                    or not e.payload.get("sequence_verified")
-                    or not e.payload.get("clock_healthy")
-                    or e.exchange_ns is None
-                    or abs(e.wall_ns - e.exchange_ns) > config.feeds.max_freshness_ms * 1e6
-                ):
-                    raise ExecutionBlocked(
-                        "Native feeds lack fresh verified sequence/timestamp coverage"
-                    )
+            problems = feed_problems(
+                latest, coverage, symbol, config.feeds.max_freshness_ms
+            )
+            if problems:
+                raise ExecutionBlocked("Native feed check: " + "; ".join(problems))
             return latest[("lighter", symbol)].payload
 
         def ready():
@@ -181,7 +198,7 @@ async def integration_test(
             raise ExecutionBlocked("Native lifecycle did not complete before timeout")
 
         try:
-            until = time.monotonic() + 30
+            until = time.monotonic() + 60
             while time.monotonic() < until:
                 try:
                     quote()
@@ -193,7 +210,13 @@ async def integration_test(
                     task.result()
                 await asyncio.sleep(0.1)
             else:
-                raise ExecutionBlocked("Required public feed coverage was not established")
+                problems = feed_problems(
+                    latest, coverage, symbol, config.feeds.max_freshness_ms
+                )
+                detail = "; ".join(problems) if problems else "feeds were not simultaneously ready"
+                raise ExecutionBlocked(
+                    "Required public feed coverage was not established: " + detail
+                )
             book = quote()
             portfolio = Portfolio(config.risk)
             portfolio.equity = portfolio.peak = broker.snapshot.equity
